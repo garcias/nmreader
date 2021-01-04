@@ -6,6 +6,30 @@ import dataclasses
 
 @dataclasses.dataclass
 class Parameters(object):
+    """
+    Class to represent experimental parameters of NMReady NMR experiment.
+
+    Most attributes are read from the JCAMP ## headers, but observe frequency is inferred.
+    Some attributes (npoints, deltat, observe_frequency) are needed to construct meaningful
+    arrays to represent axes of the fid and fft.
+
+    Attributes
+    ----------
+    npoints : int
+    deltat : float
+        inferred from (final_time - first_time) / (npoints - 1)
+    observe_frequency : float
+        operating frequency of the instrument
+    title : str
+    temperature : float
+    date : str
+    sample : str
+    nucleus : str
+        e.g. ^1H
+    solvent : str
+        e.g. Chloroform-d
+    scans : int
+    """
     npoints : int
     deltat : float
     observe_frequency : float
@@ -19,6 +43,35 @@ class Parameters(object):
 
 @dataclasses.dataclass( init=False )
 class Spectrum(object):
+    """
+    Class to represent experimental data from NMReady NMR experiment.
+
+    Spectrum requires a path to the dx file, it will parse the file to extract the
+    JCAMP headers and fid signal. It stores the header data in a Parameters object,
+    and computes the fft and stores it as an array. The method phase() allows for
+    linear phase correction up to 1st order, with an adjustable pivot.
+
+    Attributes
+    ----------
+    parameters: Parameters
+    fid: numpy.ndarray
+        free-induction decay signal, represented as array of complex numbers
+    time: numpy.ndarray
+        time axis for fid, inferred from delta t
+    fft: numpy.ndarray
+    frequency: numpy.ndarray
+        frequency axis for fft, inferred from deltat
+    shift: numpy.ndarray
+        frequency axis converted to chemical shift, inferred from deltat and observe frequency
+
+    Methods
+    -------
+    __init__( filename )
+        Spectrum requires path to a dx file containing the data.
+    phase( offset, ph0, ph1 )
+        Returns fft after phase correction.
+    """
+
     parameters: Parameters
     fid: numpy.ndarray
     time: numpy.ndarray
@@ -27,8 +80,13 @@ class Spectrum(object):
     shift: numpy.ndarray
 
     def __init__( self, filename ):
-        # filename is the name of an NMReady .dx file containing the FID
-        # returns fid (complex array), time (array), p (dictionary)
+        """
+        Parameters
+        ----------
+        filename : str
+            local path to NMReady dx file. The file must contain the following headers -- 
+            FIRST, LAST, NPOINTS, .OBSERVE FREQUENCY -- in order to construct the fid and fft.
+        """
 
         # Don't split into lines yet, so we can use string methods to detect blocks
         with open(filename, 'r') as file:
@@ -92,7 +150,24 @@ class Spectrum(object):
         return None
 
     def phase( self, offset, ph0, ph1 ):
-        # offset represents fraction (0-1) of x-axis range 
+        """
+        Parameters
+        ----------
+        offset : float
+            The "pivot" position for first-order correction, as a fraction [0,1] of the entire 
+            frequency axis. The first-order correction applied will be a linear function of
+            frequency centered on the offset.
+        ph0 : float
+            Zeroth order phase coefficient (in degrees)
+        ph1 : float
+            First order phase coefficient (in degrees), centered on offset
+
+        Returns
+        -------
+        numpy.ndarray
+            complex array with same length (npoints) as fft 
+        """
+        
         factor = 1.0j * numpy.pi / 180
         index = numpy.linspace(0 - offset, 1 - offset, self.parameters.npoints)
         return self.fft * numpy.exp(factor * (ph0 + ph1*index ))
