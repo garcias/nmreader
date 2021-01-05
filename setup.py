@@ -9,7 +9,7 @@ setup(
     author_email = 'garcias@kenyon.edu',
     license='MIT',
     packages=find_packages(),
-    install_requires=['numpy', 'scipy.fftpack', 'altair', 'pandas', 'dataclasses', ],
+    install_requires=['numpy', 'scipy', 'altair', 'pandas', 'dataclasses', ],
     python_requires='>=3.6',
     keywords='nmr parsing jcamp dx',
 )
