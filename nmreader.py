@@ -9,9 +9,9 @@ class Parameters(object):
     """
     Class to represent experimental parameters of NMReady NMR experiment.
 
-    Most attributes are read from the JCAMP ## headers, but detalt is inferred.
-    Some attributes (npoints, deltat, observe_frequency) are needed to construct meaningful
-    arrays to represent axes of the fid and fft.
+    Most attributes are read from the JCAMP ## headers, but detalt is inferred (in accordance
+    with the JCAMP spec) from firstx and lastx. In order to construct meaningful arrays to 
+    represent the fid and fft, three parameters (npoints, deltat, observe_frequency) are required.
 
     Attributes
     ----------
