@@ -9,7 +9,7 @@ class Parameters(object):
     """
     Class to represent experimental parameters of NMReady NMR experiment.
 
-    Most attributes are read from the JCAMP ## headers, but observe frequency is inferred.
+    Most attributes are read from the JCAMP ## headers, but detalt is inferred.
     Some attributes (npoints, deltat, observe_frequency) are needed to construct meaningful
     arrays to represent axes of the fid and fft.
 
@@ -167,7 +167,7 @@ class Spectrum(object):
         numpy.ndarray
             complex array with same length (npoints) as fft 
         """
-        
+
         factor = 1.0j * numpy.pi / 180
         index = numpy.linspace(0 - offset, 1 - offset, self.parameters.npoints)
         return self.fft * numpy.exp(factor * (ph0 + ph1*index ))
