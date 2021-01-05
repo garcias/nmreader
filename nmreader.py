@@ -153,7 +153,15 @@ class Spectrum:
         return self.fft * numpy.exp(factor * (ph0 + ph1*index ))
 
 def parse_intervals( interval_string ):
+    """Parses a string that specifies intervals on a spectral axis.
 
+    Args:
+        interval_string (str): Each interval specified by three attributes: label, center, width.
+            Attributes separated by white space. Multiple intervals separated by newline.
+    
+    Returns:
+        list: each item is a dictionary with keys: name, center, width
+    """
     interval_list = [ interval.split() for interval in interval_string.split("\n") ]
     intervals = [
         { 'name' : interval[0], 'center' : interval[1], 'width' : interval[2] } 
@@ -170,6 +178,18 @@ def parse_intervals( interval_string ):
     return df.dropna().to_dict(orient='records')
 
 def fit_baseline( shift, real, intervals, order=4 ):
+    """Computes a polynomial fit to spectrum, with non-baseline intervals masked.
+    
+    Args:
+        shift (numpy.ndarray): chemical shift axis of spectrum
+        real (numpy.ndarray): real component of fft (should be phased for best results)
+        intervals (list of dict): intervals specifying center frequency and width, should
+            be the valid result of function `parse_intervals`
+        order (int): order of the polynomial, defaults to 4
+    
+    Returns:
+        numpy.ndarray: the best-fit baseline, in same units as shift array
+    """
     df = pandas.DataFrame({'shift': shift, 'real': real})
     df['masked'] = False
     
