@@ -8,9 +8,10 @@ setup(
     author = 'Simon Garcia',
     author_email = 'garcias@kenyon.edu',
     license='MIT',
+    keywords='nmr parsing jcamp dx',
     packages=find_packages(),
     install_requires=['numpy', 'scipy', 'altair', 'pandas', 'dataclasses', ],
     python_requires='>=3.6',
-    keywords='nmr parsing jcamp dx',
+    include_package_data=True,
 )
 
