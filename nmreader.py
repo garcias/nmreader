@@ -1,3 +1,25 @@
+"""Parse a NMReady JCAMP-DX file to load FID of an experiment and compute FFT."
+
+Provides a Spectrum class to represent experimental data from an NMReady spectrometer,
+including the FID, FFT, related axes, and experimental parameters. When you create a Spectrum
+object, it will parse a JCAMP file (usually with .dx extension to extract JCAMP headers into a
+Parameters object and the FID into a complex array, and store these as its attributes. It will 
+also construct and store the time axis, and then compute the FFT with frequency and chemical
+shift axes. The method phase() provides a phase-corrected version of the fft.
+
+Also provides utility functions to help with processing the spectrum. They will likely need to
+work in tandem with an interactive GUI, to obtain meaningful arguments. 
+    parse_intervals() takes a string denoting intervals that encompass signals
+    fit_baseline() takes spectral axes and intervals to fit a polynomial to the baseline
+
+Example:
+    file = 'test.dx'
+    spec = nmreader.Spectrum( file )
+    phased = spec.phase( 1490, -10, -25 )  # pivot the first-order correction at index 1490
+    intervals = nmreader.parse_intervals("solvent 7.3 0.1")
+    phased_fitted = nmreader.fit_baseline( spec.shift, phased.real, intervals )
+"""
+
 import numpy
 from scipy.fftpack import fft, fftshift
 import altair
