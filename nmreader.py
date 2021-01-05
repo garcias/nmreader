@@ -5,7 +5,7 @@ import pandas
 import dataclasses
 
 @dataclasses.dataclass
-class Parameters(object):
+class Parameters:
     """Class to represent experimental parameters of NMReady NMR experiment.
 
     Most attributes are read from the JCAMP ## headers, but detalt is inferred (in accordance
@@ -36,7 +36,7 @@ class Parameters(object):
     scans : int
 
 @dataclasses.dataclass( init=False )
-class Spectrum(object):
+class Spectrum:
     """Class to represent experimental data from NMReady NMR experiment.
 
     Spectrum requires a path to the dx file, it will parse the file to extract the
