@@ -22,40 +22,9 @@ Example:
 
 import numpy
 from scipy.fftpack import fft, fftshift
-import altair
 import pandas
 import dataclasses
-
-@dataclasses.dataclass
-class Parameters:
-    """Class to represent experimental parameters of NMReady NMR experiment.
-
-    Most attributes are read from the JCAMP ## headers, but detalt is inferred (in accordance
-    with the JCAMP spec) from firstx and lastx. In order to construct meaningful arrays to 
-    represent the fid and fft, three parameters (npoints, deltat, observe_frequency) are required.
-
-    Attributes:
-        npoints (int) 
-        deltat (float): inferred from (final_time - first_time) / (npoints - 1)
-        observe_frequency (float): spectrometer frequency
-        title (str): name of file recorded during acquisition
-        sample (str): notes entered by user
-        temperature (float): in Centigrade units
-        scans (int): number of scans averaged
-        date (str): e.g. 2016/12/09 07:54:21-0700
-        nucleus (str): e.g. ^1H
-        solvent (str): e.g. Chloroform-d
-    """
-    npoints : int
-    deltat : float
-    observe_frequency : float
-    title : str
-    temperature : float
-    date : str
-    sample : str
-    nucleus : str
-    solvent : str
-    scans : int
+from typing import Dict
 
 @dataclasses.dataclass( init=False )
 class Spectrum:
@@ -67,7 +36,10 @@ class Spectrum:
     linear phase correction up to 1st order, with an adjustable pivot.
 
     Attributes:
-        parameters (Parameters): extracted or inferred from JCAMP headers
+        npoints (int): extracted from NPOINTS header
+        deltat (float): inferred from FIRST and LAST and NPOINTS as required by JCAMP spec
+        observe_frequency (float): extracted from .OBSERVE FREQUENCY header
+        parameters (dict): extracted from JCAMP headers
         fid (numpy.ndarray): free-induction decay signal, represented as array of complex numbers
         time (numpy.ndarray): time axis for fid, inferred from delta t and npoints
         fft (numpy.ndarray): 
@@ -80,7 +52,10 @@ class Spectrum:
         phase( offset, ph0, ph1 ): Applies phase correction and returns FFT
     """
 
-    parameters: Parameters
+    npoints: int
+    deltat: float
+    observe_frequency: float
+    parameters: Dict
     fid: numpy.ndarray
     time: numpy.ndarray
     fft: numpy.ndarray
@@ -111,23 +86,18 @@ class Spectrum:
 
         first_time = float( p['FIRST'].split(',')[0] )
         final_time = float( p['LAST'].split(',')[0] )
-        npoints = float( p['NPOINTS'] )
+        npoints = int( p['NPOINTS'] )
         deltat = (final_time - first_time) / (npoints - 1)
         sampling_frequency = 1 / deltat
         observe_frequency = float(p['.OBSERVE FREQUENCY'])
         real_factor = float( p['FACTOR'].split(',')[1] )
         imag_factor = float( p['FACTOR'].split(',')[2] )
 
-        parameters = {
-            'npoints' : int(npoints), 'deltat' : float(deltat), 
-            'observe_frequency' : float(observe_frequency),
-            'title' : p['TITLE'], 'temperature' : float(p['TEMPERATURE']),
-            'date' : p['LONG DATE'], 'sample' : p['SAMPLE DESCRIPTION'],
-            'nucleus' : p['.OBSERVE NUCLEUS'], 'solvent' : p['.SOLVENT NAME'],
-            'scans' : int(p['.AVERAGES']), 
-        }
+        self.parameters = p
 
-        self.parameters = Parameters( **parameters )
+        self.npoints = npoints
+        self.deltat = deltat
+        self.observe_frequency = observe_frequency
 
         # parse data blocks into arrays, then combine into complex array
         real_table = [
@@ -147,11 +117,11 @@ class Spectrum:
         imag_array = numpy.array( imag_list ).astype(float) * imag_factor
 
         self.fid = real_array + 1.0j * imag_array
-        self.time = numpy.linspace( first_time, final_time, self.parameters.npoints )
+        self.time = numpy.linspace( first_time, final_time, npoints )
 
         # returns arrays for spec (complex), frequency (Hz), shift (ppm)
         self.fft = fftshift( fft( self.fid ) )
-        self.frequency = numpy.linspace( 0, 1/deltat, self.parameters.npoints )
+        self.frequency = numpy.linspace( 0, 1/deltat, npoints )
         self.shift = self.frequency / observe_frequency
 
         return None
@@ -171,7 +141,7 @@ class Spectrum:
         """
 
         factor = 1.0j * numpy.pi / 180
-        index = numpy.linspace(0 - offset, 1 - offset, self.parameters.npoints)
+        index = numpy.linspace(0 - offset, 1 - offset, self.npoints)
         return self.fft * numpy.exp(factor * (ph0 + ph1*index ))
 
 def parse_intervals( interval_string ):
